@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -137,25 +138,35 @@ func (h *Handle) handleVerdict(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	if provided != h.token {
+	if subtle.ConstantTimeCompare([]byte(provided), []byte(h.token)) != 1 {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+
+	var v Verdict
 	switch in.Verdict {
 	case "approve":
-		w.WriteHeader(http.StatusNoContent)
-		h.decide(Verdict{Verdict: "approve"})
+		v = Verdict{Verdict: "approve"}
 	case "changes":
 		c := strings.TrimSpace(in.Comment)
 		if c == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
-		h.decide(Verdict{Verdict: "changes", Comment: c})
+		v = Verdict{Verdict: "changes", Comment: c}
 	default:
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	// Flush the 204 to the client before deciding: Wait() unblocks the moment we decide and
+	// main may os.Exit immediately, so flushing guarantees the browser receives the response
+	// (and shows "Sent") rather than seeing a truncated connection.
+	w.WriteHeader(http.StatusNoContent)
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+	h.decide(v)
 }
 
 // handleEvents is an SSE keep-alive used to detect a closed tab.
@@ -218,9 +229,14 @@ func (h *Handle) lifecycle(o Options) {
 		case <-maxLife.C:
 			h.decide(Verdict{Verdict: "dismissed"})
 		case <-ppid.C:
-			if os.Getppid() == 1 { // POSIX: reparented to init when the launcher dies. No-op on Windows.
+			if orphaned(os.Getppid()) {
 				h.decide(Verdict{Verdict: "dismissed"})
 			}
 		}
 	}
 }
+
+// orphaned reports whether the process has been reparented to init (ppid 1), i.e. the
+// launching session died. POSIX-only signal; on Windows ppid never becomes 1, so this is a
+// no-op there and cleanup relies on the no-client + max-lifetime backstops instead.
+func orphaned(ppid int) bool { return ppid == 1 }

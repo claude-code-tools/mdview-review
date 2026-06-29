@@ -1,22 +1,92 @@
-#mdview-bar{position:fixed;left:0;right:0;bottom:0;z-index:99999;display:flex;gap:12px;
-  align-items:flex-start;padding:12px 20px;background:#fff;border-top:1px solid #d0d7de;
-  box-shadow:0 -2px 12px rgba(0,0,0,.08);font:14px -apple-system,system-ui,sans-serif;}
-#mdview-bar button{font:600 14px -apple-system,system-ui,sans-serif;padding:8px 16px;
-  border-radius:6px;border:1px solid #d0d7de;cursor:pointer;}
-#mdview-approve{background:#1f883d;color:#fff;border-color:#1a7f37;}
-#mdview-changes{background:#f6f8fa;color:#24292f;}
-#mdview-panel{display:none;flex-direction:column;gap:8px;flex:1;}
-#mdview-panel.open{display:flex;}
-#mdview-comment{width:100%;min-height:64px;padding:8px;border-radius:6px;border:1px solid #d0d7de;
-  font:14px -apple-system,system-ui,sans-serif;resize:vertical;box-sizing:border-box;}
-#mdview-panel-actions{display:flex;gap:8px;}
-#mdview-status{color:#57606a;font:14px -apple-system,system-ui,sans-serif;}
+#mdview-bar{
+  --mv-bg:rgba(255,255,255,.82);
+  --mv-border:rgba(27,31,36,.12);
+  --mv-fg:#1f2328;
+  --mv-muted:#656d76;
+  --mv-shadow:0 12px 32px rgba(31,35,40,.16),0 2px 6px rgba(31,35,40,.08);
+  --mv-primary:#1f883d;--mv-primary-2:#1a7f37;--mv-on-primary:#fff;
+  --mv-ghost-hover:rgba(27,31,36,.06);
+  --mv-field-bg:#fff;--mv-field-border:rgba(27,31,36,.15);
+  --mv-ring:rgba(31,136,61,.35);
 
-@media (prefers-color-scheme: dark) {
-  #mdview-bar{background:#0d1117;border-top-color:#30363d;box-shadow:0 -2px 12px rgba(0,0,0,.5);}
-  #mdview-bar button{border-color:#30363d;}
-  #mdview-approve{background:#238636;border-color:#2ea043;color:#fff;}
-  #mdview-changes{background:#21262d;color:#c9d1d9;}
-  #mdview-comment{background:#0d1117;color:#c9d1d9;border-color:#30363d;}
-  #mdview-status{color:#8b949e;}
+  position:fixed;left:50%;bottom:22px;z-index:99999;box-sizing:border-box;
+  width:min(680px,calc(100% - 32px));
+  background:var(--mv-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);
+  border:1px solid var(--mv-border);border-radius:16px;box-shadow:var(--mv-shadow);
+  padding:10px 12px;color:var(--mv-fg);
+  font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",sans-serif;
+  animation:mv-rise .42s cubic-bezier(.2,.8,.2,1) both;
+  transition:width .2s ease;
+}
+#mdview-bar,#mdview-bar *{box-sizing:border-box}
+@keyframes mv-rise{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+#mdview-bar{transform:translateX(-50%)}
+
+#mdview-row{display:flex;align-items:center;gap:12px;justify-content:space-between}
+#mdview-label{display:inline-flex;align-items:center;gap:8px;padding-left:6px;
+  font-size:13.5px;font-weight:500;color:var(--mv-muted);white-space:nowrap}
+#mdview-label svg{width:16px;height:16px;opacity:.85}
+#mdview-buttons{display:flex;align-items:center;gap:8px}
+
+.mv-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  font-size:14px;font-weight:600;line-height:1;padding:9px 14px;border-radius:10px;
+  border:1px solid transparent;font-family:inherit;
+  transition:transform .12s ease,box-shadow .12s ease,background .12s ease,border-color .12s ease}
+.mv-btn svg{width:16px;height:16px;flex:none}
+.mv-btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--mv-ring)}
+
+.mv-primary{background:var(--mv-primary);color:var(--mv-on-primary);
+  box-shadow:0 1px 2px rgba(31,35,40,.2),0 2px 6px rgba(31,136,61,.25)}
+.mv-primary:hover{background:var(--mv-primary-2);transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(31,136,61,.35)}
+.mv-primary:active{transform:translateY(0);box-shadow:0 1px 2px rgba(31,35,40,.2)}
+.mv-primary:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
+
+.mv-ghost{background:transparent;color:var(--mv-fg);border-color:var(--mv-border)}
+.mv-ghost:hover{background:var(--mv-ghost-hover)}
+.mv-ghost:active{transform:translateY(0)}
+
+#mdview-panel{display:none;flex-direction:column;gap:10px;padding:4px 6px 6px}
+#mdview-bar.panel-open{width:min(680px,calc(100% - 32px))}
+#mdview-bar.panel-open #mdview-row{display:none}
+#mdview-bar.panel-open #mdview-panel{display:flex;animation:mv-fade .2s ease both}
+@keyframes mv-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#mdview-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#mdview-panel-head>span{font-size:13.5px;font-weight:600}
+#mdview-hint{font-size:11.5px;color:var(--mv-muted);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--mv-ghost-hover);padding:3px 7px;border-radius:6px}
+#mdview-comment{width:100%;min-height:76px;resize:vertical;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--mv-field-border);background:var(--mv-field-bg);color:var(--mv-fg);
+  font-family:inherit;font-size:14px;line-height:1.5;
+  transition:border-color .12s ease,box-shadow .12s ease}
+#mdview-comment::placeholder{color:var(--mv-muted)}
+#mdview-comment:focus{outline:none;border-color:var(--mv-primary);box-shadow:0 0 0 3px var(--mv-ring)}
+#mdview-panel-actions{display:flex;justify-content:flex-end;gap:8px}
+
+#mdview-bar.mv-done{width:min(440px,calc(100% - 32px))}
+.mv-confirm{display:flex;align-items:center;justify-content:center;gap:10px;padding:9px;
+  font-size:14px;font-weight:500;color:var(--mv-fg);animation:mv-fade .25s ease both}
+.mv-confirm svg{width:20px;height:20px;color:var(--mv-primary);flex:none}
+
+@media (prefers-color-scheme:dark){
+  #mdview-bar{
+    --mv-bg:rgba(22,27,34,.78);
+    --mv-border:rgba(240,246,252,.12);
+    --mv-fg:#e6edf3;--mv-muted:#8b949e;
+    --mv-shadow:0 12px 32px rgba(1,4,9,.6),0 2px 6px rgba(1,4,9,.5);
+    --mv-primary:#238636;--mv-primary-2:#2ea043;
+    --mv-ghost-hover:rgba(240,246,252,.08);
+    --mv-field-bg:#0d1117;--mv-field-border:rgba(240,246,252,.15);
+    --mv-ring:rgba(46,160,67,.4);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  #mdview-bar,#mdview-bar.panel-open #mdview-panel,.mv-confirm{animation:none}
+  .mv-btn{transition:none}
+}
+@media (max-width:520px){
+  #mdview-label{display:none}
+  #mdview-buttons{flex:1;justify-content:flex-end}
 }

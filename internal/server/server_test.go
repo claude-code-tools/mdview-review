@@ -125,3 +125,38 @@ func TestTabClose(t *testing.T) {
 		t.Fatalf("got %+v", v)
 	}
 }
+
+// Guards the flush fix: with a live SSE client attached, a POSTed verdict must still receive
+// its 204 and Wait must return — exercising the most concurrent path (client + decide).
+func TestVerdictReachesClientWithLiveSSE(t *testing.T) {
+	h, _ := Start(Options{Page: "p", Token: "tok",
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour, TabCloseGrace: time.Hour})
+	t.Cleanup(func() { h.Close() })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", h.URL+"events", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("events = %d", resp.StatusCode)
+	}
+
+	if got := post(t, h.URL+"verdict", "tok", `{"verdict":"approve"}`); got != 204 {
+		t.Fatalf("verdict with live SSE = %d, want 204", got)
+	}
+	if v := h.Wait(); v.Verdict != "approve" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestOrphanedPredicate(t *testing.T) {
+	if !orphaned(1) {
+		t.Error("ppid 1 should be orphaned")
+	}
+	if orphaned(1234) {
+		t.Error("ppid 1234 should not be orphaned")
+	}
+}

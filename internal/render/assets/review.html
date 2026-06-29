@@ -1,12 +1,32 @@
-<div id="mdview-bar">
-  <button id="mdview-approve" type="button">✅ Approve</button>
-  <button id="mdview-changes" type="button">✏️ Request changes</button>
+<div id="mdview-bar" role="region" aria-label="Document review">
+  <div id="mdview-row">
+    <span id="mdview-label">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.75 1.5a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V4.664a.25.25 0 0 0-.073-.177L11.513 1.573a.25.25 0 0 0-.177-.073H1.75ZM0 1.75C0 .784.784 0 1.75 0h9.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237V14.25A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Z"/></svg>
+      Ready for your review
+    </span>
+    <div id="mdview-buttons">
+      <button id="mdview-changes" type="button" class="mv-btn mv-ghost">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.762a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"/></svg>
+        <span>Request changes</span>
+      </button>
+      <button id="mdview-approve" type="button" class="mv-btn mv-primary">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L1.97 8.28a.75.75 0 0 1 1.06-1.06L6 10.19l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+        <span>Approve</span>
+      </button>
+    </div>
+  </div>
   <div id="mdview-panel">
-    <label for="mdview-comment">What should change?</label>
-    <textarea id="mdview-comment" placeholder="Describe the changes…"></textarea>
+    <div id="mdview-panel-head">
+      <span>Request changes</span>
+      <kbd id="mdview-hint">⌘ + Enter to send</kbd>
+    </div>
+    <textarea id="mdview-comment" rows="3" placeholder="What should change?"></textarea>
     <div id="mdview-panel-actions">
-      <button id="mdview-submit" type="button" disabled>Submit feedback</button>
-      <button id="mdview-cancel" type="button">Cancel</button>
+      <button id="mdview-cancel" type="button" class="mv-btn mv-ghost"><span>Cancel</span></button>
+      <button id="mdview-submit" type="button" class="mv-btn mv-primary" disabled>
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.989 8 .064 2.68A1.342 1.342 0 0 1 1.913 1.22l13.402 5.744a1.13 1.13 0 0 1 0 2.076L1.913 14.78A1.342 1.342 0 0 1 .064 13.32L.99 8Zm.603-5.288L2.38 7.25h4.87a.75.75 0 0 1 0 1.5H2.38l-.788 4.538L13.929 8Z"/></svg>
+        <span>Send feedback</span>
+      </button>
     </div>
   </div>
 </div>

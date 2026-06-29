@@ -96,5 +96,7 @@ func openBrowser(url string) {
 	default:
 		cmd = exec.Command("xdg-open", url)
 	}
-	_ = cmd.Start()
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "mdview: couldn't open a browser (%v) — open %s manually\n", err, url)
+	}
 }

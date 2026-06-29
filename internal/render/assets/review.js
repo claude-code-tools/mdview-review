@@ -3,41 +3,59 @@
   var bar = document.getElementById("mdview-bar");
   var approve = document.getElementById("mdview-approve");
   var changes = document.getElementById("mdview-changes");
-  var panel = document.getElementById("mdview-panel");
   var comment = document.getElementById("mdview-comment");
   var submit = document.getElementById("mdview-submit");
   var cancel = document.getElementById("mdview-cancel");
   var done = false;
+
+  // Keep-alive so the server can detect a closed tab.
   try { new EventSource("/events"); } catch (e) {}
-  function setStatus(msg) {
+
+  var CHECK = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.78 5.97a.75.75 0 0 0-1.06 0L7 9.69 5.28 7.97a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25a.75.75 0 0 0 0-1.06Z"/></svg>';
+
+  function finish(msg, ok) {
+    bar.classList.remove("panel-open");
+    bar.classList.add("mv-done");
+    var span = document.createElement("span");
+    span.textContent = msg;
     bar.innerHTML = "";
-    var s = document.createElement("div");
-    s.id = "mdview-status"; s.textContent = msg; bar.appendChild(s);
+    var wrap = document.createElement("div");
+    wrap.className = "mv-confirm";
+    if (ok) wrap.innerHTML = CHECK;
+    wrap.appendChild(span);
+    bar.appendChild(wrap);
   }
+
   function send(payload) {
-    if (done) return; done = true;
+    if (done) return;
+    done = true;
     fetch("/verdict", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + TOKEN },
       body: JSON.stringify(payload)
     }).then(function (r) {
-      if (r.ok) setStatus("✓ Sent — you can close this tab.");
-      else { done = false; setStatus("Could not send (HTTP " + r.status + ")."); }
-    }).catch(function () { setStatus("Review session ended."); });
+      if (r.ok) finish("Sent — you can close this tab.", true);
+      else finish("Couldn't record your response — please re-run.", false);
+    }).catch(function () {
+      finish("Review session ended.", false);
+    });
   }
+
   approve.addEventListener("click", function () { send({ verdict: "approve" }); });
   changes.addEventListener("click", function () {
-    panel.classList.add("open"); approve.style.display = "none"; changes.style.display = "none";
+    bar.classList.add("panel-open");
     comment.focus();
   });
-  cancel.addEventListener("click", function () {
-    panel.classList.remove("open"); approve.style.display = ""; changes.style.display = "";
-  });
+  cancel.addEventListener("click", function () { bar.classList.remove("panel-open"); });
   comment.addEventListener("input", function () { submit.disabled = comment.value.trim() === ""; });
-  function doSubmit() { var c = comment.value.trim(); if (c) send({ verdict: "changes", comment: c }); }
+
+  function doSubmit() {
+    var c = comment.value.trim();
+    if (c) send({ verdict: "changes", comment: c });
+  }
   submit.addEventListener("click", doSubmit);
   comment.addEventListener("keydown", function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); doSubmit(); }
-    if (e.key === "Escape") { cancel.click(); }
+    if (e.key === "Escape") { bar.classList.remove("panel-open"); }
   });
 })();

@@ -42,7 +42,7 @@ func Page(src []byte, token string) (string, error) {
 	b.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
 	b.WriteString(`<title>mdview review</title><style>`)
 	b.WriteString(githubCSS)
-	b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 110px;}")
+	b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 130px;}")
 	b.WriteString("\n.mermaid{margin:1rem 0;}\n")
 	b.WriteString(reviewCSS)
 	b.WriteString(`</style></head><body class="markdown-body">`)
@@ -53,7 +53,7 @@ func Page(src []byte, token string) (string, error) {
 		b.WriteString(strings.ReplaceAll(mermaidJS, "</script", `<\/script`))
 		b.WriteString("</script><script>")
 		b.WriteString(`document.querySelectorAll("pre>code.language-mermaid").forEach(function(c){var d=document.createElement("div");d.className="mermaid";d.textContent=c.textContent;c.parentElement.replaceWith(d);});`)
-		b.WriteString(`mermaid.initialize({startOnLoad:false,theme:"default",securityLevel:"loose",maxTextSize:1000000,maxEdges:5000});mermaid.run({querySelector:".mermaid"});`)
+		b.WriteString(`mermaid.initialize({startOnLoad:false,theme:"default",securityLevel:"strict",maxTextSize:1000000,maxEdges:5000});mermaid.run({querySelector:".mermaid"});`)
 		b.WriteString("</script>")
 	}
 	b.WriteString("<script>")

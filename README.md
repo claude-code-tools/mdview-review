@@ -59,12 +59,15 @@ Grab the binary for your platform from the
 `go install github.com/claude-code-tools/mdview-review@latest`), then:
 
 ```bash
-mdview path/to/file.md      # review in the browser, wait for the verdict
+mdview path/to/file.md      # review in the browser, wait for the verdict (default)
+mdview --view file.md       # overview/FYI: render + open, return immediately (no buttons, no wait)
 mdview --print file.md      # render the self-contained HTML to stdout (no server, no browser)
+mdview --version
 ```
 
-Environment overrides (seconds): `MDVIEW_NO_CLIENT_SECONDS` (default 60),
-`MDVIEW_MAX_LIFETIME_SECONDS` (default 21600).
+Environment overrides: `MDVIEW_BROWSER` (or the standard `BROWSER`) to force a specific
+browser, e.g. `MDVIEW_BROWSER="open -a Safari"`; `MDVIEW_NO_CLIENT_SECONDS` (default 60) and
+`MDVIEW_MAX_LIFETIME_SECONDS` (default 21600) tune the review-mode timeouts.
 
 ## Security
 

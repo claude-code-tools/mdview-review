@@ -19,7 +19,7 @@ The tool is a single self-contained binary published on GitHub Releases. On macO
 download + checksum-verify the pinned version into a cache (idempotent — skips if present):
 
 ```bash
-VER=v0.1.0
+VER=v0.1.1
 DIR="$HOME/.cache/mdview-review/$VER"
 os=$(uname -s | tr '[:upper:]' '[:lower:]'); case "$os" in linux) os=linux;; darwin) os=darwin;; *) os=windows;; esac
 arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64;; arm64|aarch64) arch=arm64;; esac
@@ -38,19 +38,22 @@ echo "$BIN"
 ```
 
 On **Windows**, download `mdview-windows-amd64.exe` from the same release into
-`%USERPROFILE%\.cache\mdview-review\v0.1.0\mdview.exe` and use that path.
+`%USERPROFILE%\.cache\mdview-review\v0.1.1\mdview.exe` and use that path.
 
-## Step 2 — run it BACKGROUNDED and wait
+## Step 2 — run it and wait (review mode — the default)
 
-Run the cached binary on the file **as a background command**:
+Run the cached binary on the file:
 
 ```
-$HOME/.cache/mdview-review/v0.1.0/mdview <path-to-file.md>
+$HOME/.cache/mdview-review/v0.1.1/mdview <path-to-file.md>
 ```
 
-Run it backgrounded so the wait isn't bounded by any command timeout — it blocks until the
-user clicks. The moment they decide, the process exits and you are re-invoked (push, not
-polling). Do **not** poll it.
+It blocks until the user clicks a button. **How you run it depends on who you are:**
+
+- **Main session:** run it as a **background** command (so the wait isn't bounded by a command
+  timeout). You're re-invoked the moment the user clicks — push, not polling. Do **not** poll it.
+- **Subagent:** you run once to completion and can't be re-invoked, so run it **foreground /
+  blocking** with a long timeout (up to the 10-minute max). The user should click within that.
 
 ## Step 3 — surface the URL
 
@@ -59,10 +62,28 @@ It prints `mdview: review server at http://127.0.0.1:PORT/` to stderr. Surface t
 
 ## Step 4 — act on the verdict
 
-When the backgrounded command exits, parse the last `MDVIEW_VERDICT` line on stdout:
+When the command exits, parse the last `MDVIEW_VERDICT` line on stdout:
 
 - `MDVIEW_VERDICT {"verdict":"approve"}` → proceed.
 - `MDVIEW_VERDICT {"verdict":"changes","comment":"…"}` → read the comment, make the requested
   changes, and (if useful) re-render the updated doc for another review round.
 - `MDVIEW_VERDICT {"verdict":"dismissed"}` → the user closed the tab or didn't decide; ask how
   they'd like to proceed.
+
+## Overview mode — when no decision is needed
+
+Most of the time you want the review flow above. But if you only want to **show** the user a
+rendered doc with **no decision required** (an overview / FYI), add `--view`:
+
+```
+$HOME/.cache/mdview-review/v0.1.1/mdview --view <path-to-file.md>
+```
+
+It renders the doc **without** the buttons, opens it in the browser, and **returns
+immediately** (no server, no waiting, no verdict). Use this only when you need no feedback;
+otherwise default to the review flow.
+
+## Browser override
+
+`mdview` opens the OS default browser. To force a specific one, set `MDVIEW_BROWSER` (or the
+standard `BROWSER`) to a command, e.g. `MDVIEW_BROWSER="open -a Safari"`.

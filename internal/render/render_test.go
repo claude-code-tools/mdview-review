@@ -30,3 +30,26 @@ func TestPageMermaidConditional(t *testing.T) {
 		t.Error("mermaid not injected with fence")
 	}
 }
+
+func TestViewOmitsReviewDock(t *testing.T) {
+	out, err := View([]byte("# Title\n\nHello"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Hello") || !strings.Contains(out, "<h1") {
+		t.Error("view should still render the document body")
+	}
+	if strings.Contains(out, "mdview-bar") {
+		t.Error("view must omit the review dock")
+	}
+	if strings.Contains(out, "__MDVIEW_TOKEN__") {
+		t.Error("view must not carry a token placeholder")
+	}
+}
+
+func TestViewKeepsMermaid(t *testing.T) {
+	withM, _ := View([]byte("```mermaid\ngraph TD;A-->B\n```\n"))
+	if !strings.Contains(withM, "mermaid.initialize") {
+		t.Error("view should still render mermaid diagrams")
+	}
+}

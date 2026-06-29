@@ -26,10 +26,19 @@ var reviewJS string
 
 var md = goldmark.New(goldmark.WithExtensions(extension.GFM))
 
-// Page renders markdown source to a full self-contained HTML page with the review UI
-// injected and the token substituted into the client script. Mermaid is injected only
-// when the rendered body contains a fenced mermaid block.
+// Page renders markdown to a full self-contained HTML page WITH the review dock
+// (Approve / Request-changes), with the token substituted into the client script.
 func Page(src []byte, token string) (string, error) {
+	return build(src, true, token)
+}
+
+// View renders markdown to a full self-contained HTML page WITHOUT the review dock —
+// for showing the user an overview / FYI that needs no decision.
+func View(src []byte) (string, error) {
+	return build(src, false, "")
+}
+
+func build(src []byte, withReview bool, token string) (string, error) {
 	var bodyBuf bytes.Buffer
 	if err := md.Convert(src, &bodyBuf); err != nil {
 		return "", err
@@ -42,12 +51,20 @@ func Page(src []byte, token string) (string, error) {
 	b.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
 	b.WriteString(`<title>mdview review</title><style>`)
 	b.WriteString(githubCSS)
-	b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 160px;}")
-	b.WriteString("\n.mermaid{margin:1rem 0;}\n")
-	b.WriteString(reviewCSS)
+	if withReview {
+		// Extra bottom padding so the last lines clear the fixed review dock.
+		b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 160px;}")
+		b.WriteString("\n.mermaid{margin:1rem 0;}\n")
+		b.WriteString(reviewCSS)
+	} else {
+		b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem);}")
+		b.WriteString("\n.mermaid{margin:1rem 0;}\n")
+	}
 	b.WriteString(`</style></head><body class="markdown-body">`)
 	b.WriteString(body)
-	b.WriteString(reviewHTML)
+	if withReview {
+		b.WriteString(reviewHTML)
+	}
 	if hasMermaid {
 		b.WriteString("<script>")
 		b.WriteString(strings.ReplaceAll(mermaidJS, "</script", `<\/script`))
@@ -56,8 +73,11 @@ func Page(src []byte, token string) (string, error) {
 		b.WriteString(`mermaid.initialize({startOnLoad:false,theme:"default",securityLevel:"strict",maxTextSize:1000000,maxEdges:5000});mermaid.run({querySelector:".mermaid"});`)
 		b.WriteString("</script>")
 	}
-	b.WriteString("<script>")
-	b.WriteString(strings.ReplaceAll(reviewJS, "__MDVIEW_TOKEN__", token))
-	b.WriteString("</script></body></html>")
+	if withReview {
+		b.WriteString("<script>")
+		b.WriteString(strings.ReplaceAll(reviewJS, "__MDVIEW_TOKEN__", token))
+		b.WriteString("</script>")
+	}
+	b.WriteString("</body></html>")
 	return b.String(), nil
 }

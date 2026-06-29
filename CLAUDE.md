@@ -93,6 +93,15 @@ on first use. Because all assets are embedded, the released binary has **no runt
 dependencies** and works offline. Full design in `docs/design.md`; implementation plan in
 `docs/plan.md`.
 
+**Per-agent sticky tab (live-reload).** With `MDVIEW_KEY` set, the server binds a deterministic
+port (`internal/rendezvous.PortForKey`, range 20000–39999) instead of a random one, records a
+per-key rendezvous file (`~/.cache/mdview-review/servers/`, overridable via `MDVIEW_STATE_DIR`),
+and emits an SSE instance nonce so a reconnecting tab reloads when a new round's server claims
+the same port. It stays process-per-round (exits on every verdict), so there is no daemon.
+Teardown floors: `--stop` (per key), tab-close/no-client, orphan-reap (`ppid==1`),
+`MDVIEW_OWNER_PID` watch, and a 2h max-lifetime. All opt-in: with no `MDVIEW_KEY`, behavior is
+unchanged (random port, no rendezvous file).
+
 ### Releasing
 
 Don't hand-edit version strings. Run `scripts/release.sh X.Y.Z` — it bumps the version in

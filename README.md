@@ -73,7 +73,11 @@ mdview --version
 
 Environment overrides: `MDVIEW_BROWSER` (or the standard `BROWSER`) to force a specific
 browser, e.g. `MDVIEW_BROWSER="open -a Safari"`; `MDVIEW_NO_CLIENT_SECONDS` (default 60) and
-`MDVIEW_MAX_LIFETIME_SECONDS` (default 21600) tune the review-mode timeouts.
+`MDVIEW_MAX_LIFETIME_SECONDS` (default 7200) tune the review-mode timeouts. For agent
+integrations: `MDVIEW_KEY` enables a persistent per-key browser tab across review rounds;
+`MDVIEW_OWNER_PID` makes the server exit when that pid dies; `mdview --stop` (with the same
+`MDVIEW_KEY`) definitively tears the server down. `MDVIEW_STATE_DIR` overrides where the
+per-key rendezvous files live.
 
 ## Security
 

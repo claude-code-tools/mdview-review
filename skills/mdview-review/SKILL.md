@@ -42,10 +42,16 @@ On **Windows**, download `mdview-windows-amd64.exe` from the same release into
 
 ## Step 2 — run it and wait (review mode — the default)
 
-Run the cached binary on the file:
+Run the cached binary on the file. Set two env vars so your review reuses **one tab across
+rounds** and tears down cleanly:
 
-```
-$HOME/.cache/mdview-review/v0.1.2/mdview <path-to-file.md>
+- `MDVIEW_KEY` — a stable id unique to **you** (main session: your session id; a subagent: its
+  own task id). The same key reuses the same browser tab across review rounds.
+- `MDVIEW_OWNER_PID="$PPID"` — lets the server exit if this session dies.
+
+```bash
+MDVIEW_KEY="<your-stable-id>" MDVIEW_OWNER_PID="$PPID" \
+  $HOME/.cache/mdview-review/v0.1.2/mdview <path-to-file.md>
 ```
 
 It blocks until the user clicks a button. **How you run it depends on who you are:**
@@ -54,6 +60,17 @@ It blocks until the user clicks a button. **How you run it depends on who you ar
   timeout). You're re-invoked the moment the user clicks — push, not polling. Do **not** poll it.
 - **Subagent:** you run once to completion and can't be re-invoked, so run it **foreground /
   blocking** with a long timeout (up to the 10-minute max). The user should click within that.
+  At end-of-task, definitively tear down your preview with:
+
+  ```bash
+  MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.1.2/mdview --stop
+  ```
+
+  Use a shell `trap` to ensure teardown even on early exit:
+
+  ```bash
+  trap 'MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.1.2/mdview --stop' EXIT
+  ```
 
 ## Step 3 — surface the URL
 

@@ -1,0 +1,127 @@
+package server
+
+import (
+	"bytes"
+	"context"
+	"net/http"
+	"testing"
+	"time"
+)
+
+func startTest(t *testing.T) *Handle {
+	t.Helper()
+	h, err := Start(Options{
+		Page:  `<html><body><div id="mdview-bar"></div>tok</body></html>`,
+		Token: "tok", NoClientTimeout: time.Hour, MaxLifetime: time.Hour,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Close() })
+	return h
+}
+
+func post(t *testing.T, url, auth, body string) int {
+	t.Helper()
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	if auth != "" {
+		req.Header.Set("Authorization", "Bearer "+auth)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode
+}
+
+func TestServesPageAnd404(t *testing.T) {
+	h := startTest(t)
+	resp, err := http.Get(h.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET / = %d", resp.StatusCode)
+	}
+	resp2, _ := http.Get(h.URL + "nope")
+	if resp2.StatusCode != 404 {
+		t.Fatalf("GET /nope = %d", resp2.StatusCode)
+	}
+}
+
+func TestVerdictTokenGate(t *testing.T) {
+	h := startTest(t)
+	if got := post(t, h.URL+"verdict", "", `{"verdict":"approve"}`); got != 403 {
+		t.Fatalf("no token = %d, want 403", got)
+	}
+	if got := post(t, h.URL+"verdict", "wrong", `{"verdict":"approve"}`); got != 403 {
+		t.Fatalf("wrong token = %d, want 403", got)
+	}
+}
+
+func TestApprove(t *testing.T) {
+	h := startTest(t)
+	go func() { post(t, h.URL+"verdict", "tok", `{"verdict":"approve"}`) }()
+	v := h.Wait()
+	if v.Verdict != "approve" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestChangesRequiresComment(t *testing.T) {
+	h := startTest(t)
+	if got := post(t, h.URL+"verdict", "tok", `{"verdict":"changes","comment":"  "}`); got != 400 {
+		t.Fatalf("empty comment = %d, want 400", got)
+	}
+	go func() { post(t, h.URL+"verdict", "tok", `{"verdict":"changes","comment":"fix title"}`) }()
+	v := h.Wait()
+	if v.Verdict != "changes" || v.Comment != "fix title" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestInvalidVerdict(t *testing.T) {
+	h := startTest(t)
+	if got := post(t, h.URL+"verdict", "tok", `{"verdict":"nope"}`); got != 400 {
+		t.Fatalf("invalid = %d, want 400", got)
+	}
+}
+
+func TestNoClientBackstop(t *testing.T) {
+	h, _ := Start(Options{Page: "p", Token: "t",
+		NoClientTimeout: 50 * time.Millisecond, MaxLifetime: time.Hour})
+	t.Cleanup(func() { h.Close() })
+	if v := h.Wait(); v.Verdict != "dismissed" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestMaxLifetime(t *testing.T) {
+	h, _ := Start(Options{Page: "p", Token: "t",
+		NoClientTimeout: time.Hour, MaxLifetime: 50 * time.Millisecond})
+	t.Cleanup(func() { h.Close() })
+	if v := h.Wait(); v.Verdict != "dismissed" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestTabClose(t *testing.T) {
+	h, _ := Start(Options{Page: "p", Token: "t",
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour, TabCloseGrace: 30 * time.Millisecond})
+	t.Cleanup(func() { h.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	req, _ := http.NewRequestWithContext(ctx, "GET", h.URL+"events", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("events = %d", resp.StatusCode)
+	}
+	cancel() // simulate tab close
+	if v := h.Wait(); v.Verdict != "dismissed" {
+		t.Fatalf("got %+v", v)
+	}
+}

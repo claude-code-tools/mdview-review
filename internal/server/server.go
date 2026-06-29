@@ -29,6 +29,7 @@ type Options struct {
 	PPIDPoll        time.Duration // parent-death watchdog interval (default 1s)
 	TabCloseGrace   time.Duration // grace before treating all-clients-gone as a tab close (default 1s)
 	Nonce           string        // instance id sent over SSE so a reconnecting tab can detect a new server and reload
+	OwnerAlive      func() bool   // optional: when it returns false, resolve dismissed (session/owner died)
 }
 
 // Handle is a running review server.
@@ -236,6 +237,8 @@ func (h *Handle) lifecycle(o Options) {
 			h.decide(Verdict{Verdict: "dismissed"})
 		case <-ppid.C:
 			if orphaned(os.Getppid()) {
+				h.decide(Verdict{Verdict: "dismissed"})
+			} else if o.OwnerAlive != nil && !o.OwnerAlive() {
 				h.decide(Verdict{Verdict: "dismissed"})
 			}
 		}

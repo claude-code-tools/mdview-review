@@ -186,3 +186,25 @@ func TestEventsEmitsHelloNonce(t *testing.T) {
 		t.Fatalf("missing hello nonce in stream: %q", got)
 	}
 }
+
+func TestOwnerAliveWatch(t *testing.T) {
+	ownerUp := make(chan struct{})
+	h, err := Start(Options{Page: "p", Token: "t",
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour, PPIDPoll: 10 * time.Millisecond,
+		OwnerAlive: func() bool {
+			select {
+			case <-ownerUp:
+				return false // owner "died"
+			default:
+				return true
+			}
+		}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Close() })
+	close(ownerUp) // signal the owner is gone
+	if v := h.Wait(); v.Verdict != "dismissed" {
+		t.Fatalf("got %+v, want dismissed", v)
+	}
+}

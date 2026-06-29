@@ -8,8 +8,17 @@
   var cancel = document.getElementById("mdview-cancel");
   var done = false;
 
-  // Keep-alive so the server can detect a closed tab.
-  try { new EventSource("/events"); } catch (e) {}
+  // Keep-alive (so the server can detect a closed tab) + reload-on-reconnect: if the SSE
+  // reattaches to a NEW server instance (different nonce), the doc changed across a review
+  // round — reload to pick up the fresh page and token.
+  var seenNonce = null;
+  try {
+    var es = new EventSource("/events");
+    es.addEventListener("hello", function (e) {
+      if (seenNonce === null) seenNonce = e.data;
+      else if (e.data !== seenNonce) location.reload();
+    });
+  } catch (e) {}
 
   var CHECK = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.78 5.97a.75.75 0 0 0-1.06 0L7 9.69 5.28 7.97a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25a.75.75 0 0 0 0-1.06Z"/></svg>';
 

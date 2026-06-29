@@ -53,3 +53,15 @@ func TestViewKeepsMermaid(t *testing.T) {
 		t.Error("view should still render mermaid diagrams")
 	}
 }
+
+func TestPageWiresReloadOnReconnect(t *testing.T) {
+	page, err := Page([]byte("# hi"), "tok")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`addEventListener("hello"`, "location.reload()"} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("page missing %q", want)
+		}
+	}
+}

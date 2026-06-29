@@ -1,6 +1,6 @@
 {
   "name": "mdview-review",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Render a markdown document in the browser with Approve / Request-changes buttons whose verdict is reported back to the Claude Code session.",
   "author": { "name": "Gunwoo Lee" },
   "homepage": "https://github.com/claude-code-tools/mdview-review",

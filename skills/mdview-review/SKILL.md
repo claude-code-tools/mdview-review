@@ -19,7 +19,7 @@ The tool is a single self-contained binary published on GitHub Releases. On macO
 download + checksum-verify the pinned version into a cache (idempotent — skips if present):
 
 ```bash
-VER=v0.1.1
+VER=v0.1.2
 DIR="$HOME/.cache/mdview-review/$VER"
 os=$(uname -s | tr '[:upper:]' '[:lower:]'); case "$os" in linux) os=linux;; darwin) os=darwin;; *) os=windows;; esac
 arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64;; arm64|aarch64) arch=arm64;; esac
@@ -38,14 +38,14 @@ echo "$BIN"
 ```
 
 On **Windows**, download `mdview-windows-amd64.exe` from the same release into
-`%USERPROFILE%\.cache\mdview-review\v0.1.1\mdview.exe` and use that path.
+`%USERPROFILE%\.cache\mdview-review\v0.1.2\mdview.exe` and use that path.
 
 ## Step 2 — run it and wait (review mode — the default)
 
 Run the cached binary on the file:
 
 ```
-$HOME/.cache/mdview-review/v0.1.1/mdview <path-to-file.md>
+$HOME/.cache/mdview-review/v0.1.2/mdview <path-to-file.md>
 ```
 
 It blocks until the user clicks a button. **How you run it depends on who you are:**
@@ -76,7 +76,7 @@ Most of the time you want the review flow above. But if you only want to **show*
 rendered doc with **no decision required** (an overview / FYI), add `--view`:
 
 ```
-$HOME/.cache/mdview-review/v0.1.1/mdview --view <path-to-file.md>
+$HOME/.cache/mdview-review/v0.1.2/mdview --view <path-to-file.md>
 ```
 
 It renders the doc **without** the buttons, opens it in the browser, and **returns

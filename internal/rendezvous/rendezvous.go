@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"net"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // Record is the on-disk handoff describing a running server for a key.
@@ -116,13 +118,33 @@ func RemoveIfOwner(key string, pid int) error {
 
 // Stop terminates any live server recorded for key, then removes the file. Idempotent: a
 // missing record or a dead PID just cleans up the stale file.
+//
+// When a live PID is found, Stop waits for the sticky port to become free before removing
+// the record, so that the successor binary can bind it rather than falling back to an
+// ephemeral port.
 func Stop(key string) error {
 	rec, err := Read(key)
 	if err != nil || rec == nil {
-		return err
+		return Remove(key)
 	}
 	if rec.PID > 0 && Alive(rec.PID) {
 		terminate(rec.PID)
+		waitPortFree(rec.Port, time.Second)
 	}
 	return Remove(key)
+}
+
+// waitPortFree blocks until 127.0.0.1:port is bindable again or timeout elapses (best-effort:
+// a predecessor we SIGTERM'd releases its listener asynchronously). On timeout it returns and
+// the caller's ephemeral fallback is the floor.
+func waitPortFree(port int, timeout time.Duration) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err == nil {
+			_ = ln.Close()
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }

@@ -8,6 +8,8 @@ import (
 )
 
 func TestPortForKeyDeterministicInRange(t *testing.T) {
+	// "agent-1" and "agent-2" have distinct FNV-1a hashes, so the a != c assertion below is
+	// deterministic by construction, not a flaky collision check.
 	a := PortForKey("agent-1")
 	b := PortForKey("agent-1")
 	c := PortForKey("agent-2")

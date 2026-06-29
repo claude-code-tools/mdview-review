@@ -3,6 +3,8 @@ package server
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -206,5 +208,47 @@ func TestOwnerAliveWatch(t *testing.T) {
 	close(ownerUp) // signal the owner is gone
 	if v := h.Wait(); v.Verdict != "dismissed" {
 		t.Fatalf("got %+v, want dismissed", v)
+	}
+}
+
+func freePort(t *testing.T) int {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+	return p
+}
+
+func TestStickyPortUsed(t *testing.T) {
+	want := freePort(t)
+	h, err := Start(Options{Page: "p", Token: "t", StickyPort: want,
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Close() })
+	if h.Port != want {
+		t.Fatalf("got port %d, want sticky %d", h.Port, want)
+	}
+}
+
+func TestStickyPortFallsBackWhenTaken(t *testing.T) {
+	taken := freePort(t)
+	blocker, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", taken))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer blocker.Close()
+	h, err := Start(Options{Page: "p", Token: "t", StickyPort: taken,
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Close() })
+	if h.Port == taken || h.Port == 0 {
+		t.Fatalf("expected fallback to a different port, got %d", h.Port)
 	}
 }

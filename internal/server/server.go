@@ -30,6 +30,7 @@ type Options struct {
 	TabCloseGrace   time.Duration // grace before treating all-clients-gone as a tab close (default 1s)
 	Nonce           string        // instance id sent over SSE so a reconnecting tab can detect a new server and reload
 	OwnerAlive      func() bool   // optional: when it returns false, resolve dismissed (session/owner died)
+	StickyPort      int            // preferred port; 0 or unavailable -> random ephemeral
 }
 
 // Handle is a running review server.
@@ -68,7 +69,7 @@ func Start(o Options) (*Handle, error) {
 		o.TabCloseGrace = time.Second
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := listen(o.StickyPort)
 	if err != nil {
 		return nil, err
 	}
@@ -249,3 +250,14 @@ func (h *Handle) lifecycle(o Options) {
 // launching session died. POSIX-only signal; on Windows ppid never becomes 1, so this is a
 // no-op there and cleanup relies on the no-client + max-lifetime backstops instead.
 func orphaned(ppid int) bool { return ppid == 1 }
+
+// listen prefers stickyPort, falling back to a random ephemeral loopback port (the original
+// collision-free behavior) when stickyPort is 0 or already taken.
+func listen(stickyPort int) (net.Listener, error) {
+	if stickyPort > 0 {
+		if ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", stickyPort)); err == nil {
+			return ln, nil
+		}
+	}
+	return net.Listen("tcp", "127.0.0.1:0")
+}

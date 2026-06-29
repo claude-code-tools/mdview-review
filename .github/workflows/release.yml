@@ -45,7 +45,7 @@ jobs:
       - name: Check out tap
         uses: actions/checkout@v4
         with:
-          repository: claude-code-tools/homebrew-tap
+          repository: leegunwoo98/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: tap
       - name: Commit formula to tap

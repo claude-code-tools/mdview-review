@@ -42,7 +42,7 @@ func Page(src []byte, token string) (string, error) {
 	b.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
 	b.WriteString(`<title>mdview review</title><style>`)
 	b.WriteString(githubCSS)
-	b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 130px;}")
+	b.WriteString("\nbody{box-sizing:border-box;margin:0;padding:2.5rem clamp(1rem,5vw,5rem) 160px;}")
 	b.WriteString("\n.mermaid{margin:1rem 0;}\n")
 	b.WriteString(reviewCSS)
 	b.WriteString(`</style></head><body class="markdown-body">`)

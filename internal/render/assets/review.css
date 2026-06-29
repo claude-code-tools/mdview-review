@@ -11,3 +11,12 @@
   font:14px -apple-system,system-ui,sans-serif;resize:vertical;box-sizing:border-box;}
 #mdview-panel-actions{display:flex;gap:8px;}
 #mdview-status{color:#57606a;font:14px -apple-system,system-ui,sans-serif;}
+
+@media (prefers-color-scheme: dark) {
+  #mdview-bar{background:#0d1117;border-top-color:#30363d;box-shadow:0 -2px 12px rgba(0,0,0,.5);}
+  #mdview-bar button{border-color:#30363d;}
+  #mdview-approve{background:#238636;border-color:#2ea043;color:#fff;}
+  #mdview-changes{background:#21262d;color:#c9d1d9;}
+  #mdview-comment{background:#0d1117;color:#c9d1d9;border-color:#30363d;}
+  #mdview-status{color:#8b949e;}
+}

@@ -15,12 +15,23 @@ import (
 	"github.com/claude-code-tools/mdview-review/internal/server"
 )
 
+func usage() {
+	fmt.Fprintln(os.Stderr, "usage: mdview [--print] <file.md>")
+	os.Exit(2)
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: mdview <file.md>")
-		os.Exit(2)
+	args := os.Args[1:]
+	printOnly := false
+	if len(args) > 0 && args[0] == "--print" {
+		printOnly = true
+		args = args[1:]
 	}
-	src, err := os.ReadFile(os.Args[1])
+	if len(args) < 1 {
+		usage()
+	}
+
+	src, err := os.ReadFile(args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: %v\n", err)
 		os.Exit(1)
@@ -37,6 +48,12 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: render: %v\n", err)
 		os.Exit(1)
+	}
+
+	// --print renders the self-contained HTML to stdout and exits — no server, no browser.
+	if printOnly {
+		fmt.Print(page)
+		return
 	}
 
 	h, err := server.Start(server.Options{

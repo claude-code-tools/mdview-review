@@ -52,6 +52,12 @@ diagrams.
 The bundled skill downloads and checksum-verifies the matching release binary on first use,
 then the agent reaches for it whenever it wants you to review a markdown document.
 
+## Install (Homebrew)
+
+```
+brew install claude-code-tools/tap/mdview
+```
+
 ## Manual CLI
 
 Grab the binary for your platform from the

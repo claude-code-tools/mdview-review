@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -158,5 +159,30 @@ func TestOrphanedPredicate(t *testing.T) {
 	}
 	if orphaned(1234) {
 		t.Error("ppid 1234 should not be orphaned")
+	}
+}
+
+func TestEventsEmitsHelloNonce(t *testing.T) {
+	h, err := Start(Options{Page: "p", Token: "t", Nonce: "nonce-123",
+		NoClientTimeout: time.Hour, MaxLifetime: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Close() })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", h.URL+"events", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	buf := make([]byte, 256)
+	n, _ := resp.Body.Read(buf)
+	got := string(buf[:n])
+	if !strings.Contains(got, "event: hello") || !strings.Contains(got, "nonce-123") {
+		t.Fatalf("missing hello nonce in stream: %q", got)
 	}
 }

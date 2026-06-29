@@ -28,6 +28,7 @@ type Options struct {
 	MaxLifetime     time.Duration // dismissed after this regardless (default 6h)
 	PPIDPoll        time.Duration // parent-death watchdog interval (default 1s)
 	TabCloseGrace   time.Duration // grace before treating all-clients-gone as a tab close (default 1s)
+	Nonce           string        // instance id sent over SSE so a reconnecting tab can detect a new server and reload
 }
 
 // Handle is a running review server.
@@ -38,6 +39,7 @@ type Handle struct {
 	srv   *http.Server
 	token string
 	page  string
+	nonce string
 	grace time.Duration
 
 	mu            sync.Mutex
@@ -76,6 +78,7 @@ func Start(o Options) (*Handle, error) {
 		URL:    fmt.Sprintf("http://127.0.0.1:%d/", port),
 		token:  o.Token,
 		page:   o.Page,
+		nonce:  o.Nonce,
 		grace:  o.TabCloseGrace,
 		result: make(chan Verdict, 1),
 		stop:   make(chan struct{}),
@@ -180,6 +183,9 @@ func (h *Handle) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	io.WriteString(w, ": connected\n\n")
+	if h.nonce != "" {
+		io.WriteString(w, "event: hello\ndata: "+h.nonce+"\n\n")
+	}
 	fl.Flush()
 
 	h.mu.Lock()

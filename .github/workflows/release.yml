@@ -28,3 +28,38 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+      - name: Render Homebrew formula
+        run: |
+          set -euo pipefail
+          ver="${GITHUB_REF_NAME#v}"
+          sha() { grep " $1\$" dist/SHA256SUMS | cut -d' ' -f1; }
+          sed \
+            -e "s/__VERSION__/$ver/g" \
+            -e "s/__SHA_DARWIN_ARM64__/$(sha mdview-darwin-arm64)/g" \
+            -e "s/__SHA_DARWIN_AMD64__/$(sha mdview-darwin-amd64)/g" \
+            -e "s/__SHA_LINUX_ARM64__/$(sha mdview-linux-arm64)/g" \
+            -e "s/__SHA_LINUX_AMD64__/$(sha mdview-linux-amd64)/g" \
+            .github/mdview.rb.tmpl > mdview.rb
+          echo "----- rendered formula -----"
+          cat mdview.rb
+      - name: Check out tap
+        uses: actions/checkout@v4
+        with:
+          repository: claude-code-tools/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+      - name: Commit formula to tap
+        run: |
+          set -euo pipefail
+          mkdir -p tap/Formula
+          cp mdview.rb tap/Formula/mdview.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/mdview.rb
+          if git diff --cached --quiet; then
+            echo "formula unchanged — nothing to push"
+          else
+            git commit -m "mdview ${GITHUB_REF_NAME#v}"
+            git push
+          fi

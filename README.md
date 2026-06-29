@@ -91,6 +91,21 @@ go build -o mdview .
 go test ./...
 ```
 
+## Releasing
+
+The version is pinned in two places (`plugin.json` and the skill's binary path).
+`scripts/release.sh` bumps both, commits, tags, and pushes in one step:
+
+```bash
+scripts/release.sh 0.1.3          # bump, tag v0.1.3, push (cuts the release)
+scripts/release.sh 0.1.3 --no-push  # commit + tag locally only
+```
+
+Pushing the tag triggers `.github/workflows/release.yml`, which cross-compiles all
+platforms, publishes the GitHub Release with `SHA256SUMS`, then regenerates the
+Homebrew formula from `.github/mdview.rb.tmpl` and pushes it to
+`claude-code-tools/homebrew-tap`. Nothing else is edited by hand.
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).

@@ -92,3 +92,13 @@ The repo doubles as its own single-plugin marketplace (`.claude-plugin/marketpla
 on first use. Because all assets are embedded, the released binary has **no runtime
 dependencies** and works offline. Full design in `docs/design.md`; implementation plan in
 `docs/plan.md`.
+
+### Releasing
+
+Don't hand-edit version strings. Run `scripts/release.sh X.Y.Z` — it bumps the version in
+both managed spots (`.claude-plugin/plugin.json` and the `vX.Y.Z` binary pin in
+`skills/mdview-review/SKILL.md`, 4 occurrences), commits, tags, and pushes. The tag push
+triggers `.github/workflows/release.yml`: cross-compile → publish Release + `SHA256SUMS` →
+render `.github/mdview.rb.tmpl` with the real checksums → push the formula to
+`claude-code-tools/homebrew-tap`. The Homebrew formula is a generated artifact; never edit it
+by hand. (`docs/plan.md` mentions `v0.1.0` as a frozen design record — not a release pin.)

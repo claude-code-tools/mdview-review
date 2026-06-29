@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/claude-code-tools/mdview-review/internal/render"
+	"github.com/claude-code-tools/mdview-review/internal/rendezvous"
 	"github.com/claude-code-tools/mdview-review/internal/server"
 )
 
@@ -20,7 +21,7 @@ import (
 var version = "dev"
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: mdview [--view | --print | --version] <file.md>")
+	fmt.Fprintln(os.Stderr, "usage: mdview [--view | --print | --stop | --version] <file.md>")
 	os.Exit(2)
 }
 
@@ -31,6 +32,9 @@ func main() {
 		switch args[0] {
 		case "--version", "-v":
 			fmt.Println("mdview " + version)
+			return
+		case "--stop":
+			stopForKey()
 			return
 		case "--print":
 			mode, args = "print", args[1:]
@@ -83,25 +87,53 @@ func main() {
 
 	// Default: review mode — render with the dock, serve, block until the user decides.
 	token := newToken()
+	nonce := newToken()
 	page, err := render.Page(src, token)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: render: %v\n", err)
 		os.Exit(1)
 	}
-	h, err := server.Start(server.Options{
+
+	key := os.Getenv("MDVIEW_KEY")
+	stickyPort := 0
+	if key != "" {
+		// Replace-on-reuse: tear down any stale server holding this key, then claim its port.
+		_ = rendezvous.Stop(key)
+		stickyPort = rendezvous.PortForKey(key)
+	}
+
+	opts := server.Options{
 		Page:            page,
 		Token:           token,
+		Nonce:           nonce,
+		StickyPort:      stickyPort,
 		NoClientTimeout: envDur("MDVIEW_NO_CLIENT_SECONDS", 60),
-		MaxLifetime:     envDur("MDVIEW_MAX_LIFETIME_SECONDS", 6*3600),
-	})
+		MaxLifetime:     envDur("MDVIEW_MAX_LIFETIME_SECONDS", 2*3600),
+	}
+	if ownerPID := envInt("MDVIEW_OWNER_PID"); ownerPID > 0 {
+		opts.OwnerAlive = func() bool { return rendezvous.Alive(ownerPID) }
+	}
+
+	h, err := server.Start(opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: %v\n", err)
 		os.Exit(1)
 	}
+
+	if key != "" {
+		_ = rendezvous.Write(rendezvous.Record{
+			PID: os.Getpid(), Port: h.Port, Token: token, Key: key, StartedAt: time.Now().Unix(),
+		})
+	}
+
 	fmt.Fprintf(os.Stderr, "mdview: review server at %s\n", h.URL)
 	openBrowser(h.URL)
 
 	v := h.Wait()
+	if key != "" {
+		// os.Exit skips defers — remove explicitly, but only if we still own the record.
+		_ = rendezvous.RemoveIfOwner(key, os.Getpid())
+	}
 	out, _ := json.Marshal(v)
 	fmt.Printf("MDVIEW_VERDICT %s\n", out)
 	os.Exit(0)
@@ -123,6 +155,27 @@ func envDur(name string, defSeconds float64) time.Duration {
 		}
 	}
 	return time.Duration(defSeconds * float64(time.Second))
+}
+
+func envInt(name string) int {
+	if s := os.Getenv(name); s != "" {
+		if n, err := strconv.Atoi(s); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+
+// stopForKey definitively tears down this agent's preview server (if any) for MDVIEW_KEY.
+// Idempotent: no key or no server is a no-op, exit 0.
+func stopForKey() {
+	key := os.Getenv("MDVIEW_KEY")
+	if key == "" {
+		return
+	}
+	if err := rendezvous.Stop(key); err != nil {
+		fmt.Fprintf(os.Stderr, "mdview: stop: %v\n", err)
+	}
 }
 
 // openBrowser opens url in $MDVIEW_BROWSER / $BROWSER if set (a command, optionally with

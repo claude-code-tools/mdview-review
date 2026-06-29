@@ -1,5 +1,4 @@
 {
-  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "mdview-review",
   "version": "0.1.0",
   "description": "Render a markdown document in the browser with Approve / Request-changes buttons whose verdict is reported back to the Claude Code session.",

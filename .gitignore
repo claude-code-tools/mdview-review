@@ -2,3 +2,8 @@
 /mdview
 /mdview.exe
 *.out
+
+# OS / editor junk
+.DS_Store
+.idea/
+.vscode/

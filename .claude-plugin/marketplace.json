@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-code-tools",
+  "description": "Gunwoo's Claude Code tools",
+  "owner": { "name": "Gunwoo Lee" },
+  "plugins": [
+    {
+      "name": "mdview-review",
+      "description": "Markdown review with in-page Approve / Request-changes buttons that report the verdict to the Claude Code session.",
+      "author": { "name": "Gunwoo Lee" },
+      "category": "productivity",
+      "source": "./"
+    }
+  ]
+}

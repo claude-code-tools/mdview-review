@@ -19,7 +19,7 @@ The tool is a single self-contained binary published on GitHub Releases. On macO
 download + checksum-verify the pinned version into a cache (idempotent — skips if present):
 
 ```bash
-VER=v0.1.2
+VER=v0.2.0
 DIR="$HOME/.cache/mdview-review/$VER"
 os=$(uname -s | tr '[:upper:]' '[:lower:]'); case "$os" in linux) os=linux;; darwin) os=darwin;; *) os=windows;; esac
 arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64;; arm64|aarch64) arch=arm64;; esac
@@ -38,7 +38,7 @@ echo "$BIN"
 ```
 
 On **Windows**, download `mdview-windows-amd64.exe` from the same release into
-`%USERPROFILE%\.cache\mdview-review\v0.1.2\mdview.exe` and use that path.
+`%USERPROFILE%\.cache\mdview-review\v0.2.0\mdview.exe` and use that path.
 
 ## Step 2 — run it and wait (review mode — the default)
 
@@ -51,7 +51,7 @@ rounds** and tears down cleanly:
 
 ```bash
 MDVIEW_KEY="<your-stable-id>" MDVIEW_OWNER_PID="$PPID" \
-  $HOME/.cache/mdview-review/v0.1.2/mdview <path-to-file.md>
+  $HOME/.cache/mdview-review/v0.2.0/mdview <path-to-file.md>
 ```
 
 It blocks until the user clicks a button. **How you run it depends on who you are:**
@@ -63,13 +63,13 @@ It blocks until the user clicks a button. **How you run it depends on who you ar
   At end-of-task, definitively tear down your preview with:
 
   ```bash
-  MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.1.2/mdview --stop
+  MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.2.0/mdview --stop
   ```
 
   Use a shell `trap` to ensure teardown even on early exit:
 
   ```bash
-  trap 'MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.1.2/mdview --stop' EXIT
+  trap 'MDVIEW_KEY="<your-stable-id>" $HOME/.cache/mdview-review/v0.2.0/mdview --stop' EXIT
   ```
 
 ## Step 3 — surface the URL
@@ -105,7 +105,7 @@ disables the strip entirely):
 
     MDVIEW_COMMANDS='[{"id":"...","label":"...","prompt":"...","recommended":true}]' \
       MDVIEW_KEY="<id>" MDVIEW_OWNER_PID="$PPID" \
-      $HOME/.cache/mdview-review/v0.1.2/mdview <file.md>
+      $HOME/.cache/mdview-review/v0.2.0/mdview <file.md>
 
 **A catalog to draw from** (a starter set, not a closed list — adapt prompts to the doc, and
 invent doc-specific buttons freely):
@@ -139,7 +139,7 @@ Most of the time you want the review flow above. But if you only want to **show*
 rendered doc with **no decision required** (an overview / FYI), add `--view`:
 
 ```
-$HOME/.cache/mdview-review/v0.1.2/mdview --view <path-to-file.md>
+$HOME/.cache/mdview-review/v0.2.0/mdview --view <path-to-file.md>
 ```
 
 It renders the doc **without** the buttons, opens it in the browser, and **returns

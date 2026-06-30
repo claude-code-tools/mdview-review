@@ -4,7 +4,10 @@
 
 `mdview` renders a markdown file as a clean web page with **Approve** and **Request changes**
 buttons pinned to the bottom. Click one, and your decision (and any comment) is reported back
-to the waiting Claude Code session — no switching to the terminal to type a reply.
+to the waiting Claude Code session — no switching to the terminal to type a reply. Beneath them
+sits a scrollable row of **curated command buttons** — one-click follow-ups like *review with a
+subagent* or *verify against the codebase* — so you can direct the agent's next step, not just
+approve or reject.
 
 ![mdview review page with Approve / Request changes buttons](assets/demo.png)
 
@@ -33,6 +36,7 @@ instantly.
    line and exits:
    - `MDVIEW_VERDICT {"verdict":"approve"}`
    - `MDVIEW_VERDICT {"verdict":"changes","comment":"…"}`
+   - `MDVIEW_VERDICT {"verdict":"command","command":"…","prompt":"…"}` (you clicked a curated command button)
    - `MDVIEW_VERDICT {"verdict":"dismissed"}` (you closed the tab without deciding)
 
 Because the binary exits the instant you click, the Claude Code session is **notified on
@@ -41,6 +45,22 @@ cleanly to `dismissed` so a session never hangs forever.
 
 The page follows your system light/dark theme, and fenced ` ```mermaid ` blocks render as
 diagrams.
+
+## Command buttons
+
+Beneath Approve / Request-changes, the review page shows a scrollable strip of **curated
+command buttons** — one-click shortcuts for the follow-ups you'd otherwise type ("review this
+with a subagent", "verify it against the codebase", "stress-test it"). Clicking one ends the
+round and hands its instruction back to the agent, which acts on it:
+
+```
+MDVIEW_VERDICT {"verdict":"command","command":"verify-against-codebase","prompt":"Verify this against the actual codebase …"}
+```
+
+A built-in set ships by default; an agent can tailor the buttons to the document it's showing
+you — and highlight the one or two it most recommends (a gold ✦ sparkle pill) — by passing
+`MDVIEW_COMMANDS` (see [Manual CLI](#manual-cli) below). They're suggestions, never
+auto-actions: nothing runs until you click.
 
 ## Install (Claude Code plugin)
 

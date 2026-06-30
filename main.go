@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/claude-code-tools/mdview-review/internal/render"
@@ -119,6 +121,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "mdview: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Superseded by a replace-on-reuse SIGTERM, or interrupted (Ctrl-C) → resolve "dismissed"
+	// and exit 0 with a verdict, instead of dying by signal (143/130) with no MDVIEW_VERDICT.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		h.Dismiss()
+	}()
 
 	if key != "" {
 		_ = rendezvous.Write(rendezvous.Record{

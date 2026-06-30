@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -320,5 +321,56 @@ func TestReviewCommandVerdictRoundTrip(t *testing.T) {
 		!strings.Contains(out.String(), `"command":"simplify"`) ||
 		!strings.Contains(out.String(), `"prompt":"tighten it"`) {
 		t.Fatalf("MDVIEW_VERDICT missing command/prompt: %q", out.String())
+	}
+}
+
+func TestSigtermYieldsDismissedExitZero(t *testing.T) {
+	state := t.TempDir()
+	t.Setenv("MDVIEW_STATE_DIR", state)
+	bin := buildBin(t)
+
+	md := filepath.Join(t.TempDir(), "doc.md")
+	if err := os.WriteFile(md, []byte("# hi\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	const key = "sigterm-key"
+
+	cmd := exec.Command(bin, md)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Env = append(os.Environ(),
+		"MDVIEW_KEY="+key,
+		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_OPEN_GRACE_SECONDS=0",
+		"MDVIEW_BROWSER=true",
+		"MDVIEW_NO_CLIENT_SECONDS=30",
+	)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the server to be up (rendezvous file written after Start, so the signal handler
+	// is already installed).
+	var rec *rendezvous.Record
+	for i := 0; i < 100; i++ {
+		rec, _ = rendezvous.Read(key)
+		if rec != nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if rec == nil {
+		_ = cmd.Process.Kill()
+		t.Fatal("rendezvous file never appeared")
+	}
+
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("expected exit 0 after SIGTERM, got %v (out=%q)", err, out.String())
+	}
+	if !strings.Contains(out.String(), `"verdict":"dismissed"`) {
+		t.Fatalf("expected dismissed verdict on SIGTERM, got %q", out.String())
 	}
 }

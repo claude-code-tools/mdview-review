@@ -106,6 +106,11 @@ func (h *Handle) Wait() Verdict { return <-h.result }
 // opening a duplicate browser tab when an existing tab has reconnected after a sticky-port reuse.
 func (h *Handle) FirstClient() <-chan struct{} { return h.firstClient }
 
+// Dismiss resolves the review as "dismissed" (via the once-only decide path, so it is a no-op
+// if a real verdict already landed). The launcher calls it on SIGTERM/interrupt so a superseded
+// or interrupted server exits cleanly with a verdict instead of dying by signal.
+func (h *Handle) Dismiss() { h.decide(Verdict{Verdict: "dismissed"}) }
+
 // Close shuts the server down. Safe to call after a decision.
 func (h *Handle) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)

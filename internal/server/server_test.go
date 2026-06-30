@@ -252,3 +252,21 @@ func TestStickyPortFallsBackWhenTaken(t *testing.T) {
 		t.Fatalf("expected fallback to a different port, got %d", h.Port)
 	}
 }
+
+func TestCommandVerdict(t *testing.T) {
+	h := startTest(t)
+	go func() {
+		post(t, h.URL+"verdict", "tok", `{"verdict":"command","command":"simplify","prompt":"do the thing"}`)
+	}()
+	v := h.Wait()
+	if v.Verdict != "command" || v.Command != "simplify" || v.Prompt != "do the thing" {
+		t.Fatalf("got %+v", v)
+	}
+}
+
+func TestCommandRequiresNonEmptyCommand(t *testing.T) {
+	h := startTest(t)
+	if got := post(t, h.URL+"verdict", "tok", `{"verdict":"command","command":"  "}`); got != 400 {
+		t.Fatalf("empty command = %d, want 400", got)
+	}
+}

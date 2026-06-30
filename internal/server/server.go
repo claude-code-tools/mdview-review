@@ -18,6 +18,8 @@ import (
 type Verdict struct {
 	Verdict string `json:"verdict"`
 	Comment string `json:"comment,omitempty"`
+	Command string `json:"command,omitempty"`
+	Prompt  string `json:"prompt,omitempty"`
 }
 
 // Options configures a review server.
@@ -159,6 +161,13 @@ func (h *Handle) handleVerdict(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		v = Verdict{Verdict: "changes", Comment: c}
+	case "command":
+		cmd := strings.TrimSpace(in.Command)
+		if cmd == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		v = Verdict{Verdict: "command", Command: cmd, Prompt: in.Prompt}
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		return

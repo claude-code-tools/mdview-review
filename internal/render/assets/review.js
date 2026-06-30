@@ -68,6 +68,14 @@
       });
       cmdStrip.appendChild(b);
     });
+    function updateFades() {
+      var maxScroll = cmdStrip.scrollWidth - cmdStrip.clientWidth;
+      cmdStrip.classList.toggle("is-start", cmdStrip.scrollLeft <= 1);
+      cmdStrip.classList.toggle("is-end", cmdStrip.scrollLeft >= maxScroll - 1);
+    }
+    cmdStrip.addEventListener("scroll", updateFades);
+    window.addEventListener("resize", updateFades);
+    updateFades();
   })();
 
   approve.addEventListener("click", function () { send({ verdict: "approve" }); });

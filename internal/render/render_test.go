@@ -115,3 +115,19 @@ func TestViewHasNoCommandStrip(t *testing.T) {
 		t.Fatalf("view mode must not include the command strip")
 	}
 }
+
+func TestPageWiresScrollFades(t *testing.T) {
+	page, err := Page([]byte("# hi"), "tok", []Command{{ID: "x", Label: "X", Prompt: "p", Recommended: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`addEventListener("scroll"`, // strip scroll listener
+		"is-end",                    // fade state class toggled by the listener
+		"mv-cmd--recommended",       // recommended pill style is referenced
+	} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("page missing %q", want)
+		}
+	}
+}

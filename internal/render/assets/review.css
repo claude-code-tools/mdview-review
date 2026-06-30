@@ -104,3 +104,26 @@
 .mv-cmd:hover{background:transparent;border-color:var(--mv-muted);transform:translateY(-1px)}
 .mv-cmd:active{transform:translateY(0)}
 .mv-cmd:focus-visible{outline:none;box-shadow:0 0 0 3px var(--mv-ring)}
+
+/* Scroll-fade: mask whichever edge has hidden overflow (state classes set by review.js). */
+#mdview-commands{
+  --mv-fade:20px;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 var(--mv-fade),#000 calc(100% - var(--mv-fade)),transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 var(--mv-fade),#000 calc(100% - var(--mv-fade)),transparent 100%);
+}
+#mdview-commands.is-start{
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - var(--mv-fade)),transparent 100%);
+  mask-image:linear-gradient(to right,#000 0,#000 calc(100% - var(--mv-fade)),transparent 100%);
+}
+#mdview-commands.is-end{
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 var(--mv-fade),#000 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 var(--mv-fade),#000 100%);
+}
+#mdview-commands.is-start.is-end{-webkit-mask-image:none;mask-image:none}
+
+.mv-cmd--recommended{
+  border-color:var(--mv-primary);color:var(--mv-primary);
+  background:transparent;font-weight:700}
+.mv-cmd--recommended::before{content:"";display:inline-block;width:6px;height:6px;
+  margin-right:6px;border-radius:50%;background:var(--mv-primary);vertical-align:middle}
+.mv-cmd--recommended:hover{background:var(--mv-ghost-hover);border-color:var(--mv-primary)}

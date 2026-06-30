@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -215,5 +216,105 @@ func TestReplaceOnReuseReclaimesStickyPort(t *testing.T) {
 
 	if err := cmd2.Wait(); err != nil {
 		t.Fatalf("round-2 process should exit 0 on approve: %v", err)
+	}
+}
+
+func TestCommandsForReviewDefaults(t *testing.T) {
+	t.Setenv("MDVIEW_COMMANDS", "")
+	if got := commandsForReview(); len(got) != 6 {
+		t.Fatalf("unset MDVIEW_COMMANDS should give 6 defaults, got %d", len(got))
+	}
+}
+
+func TestCommandsForReviewCustom(t *testing.T) {
+	t.Setenv("MDVIEW_COMMANDS", `[{"id":"x","label":"Do X","prompt":"do x","recommended":true}]`)
+	got := commandsForReview()
+	if len(got) != 1 || got[0].ID != "x" || !got[0].Recommended {
+		t.Fatalf("custom commands not parsed: %+v", got)
+	}
+}
+
+func TestCommandsForReviewEmptyArray(t *testing.T) {
+	t.Setenv("MDVIEW_COMMANDS", `[]`)
+	if got := commandsForReview(); len(got) != 0 {
+		t.Fatalf("empty array should give no commands, got %d", len(got))
+	}
+}
+
+func TestCommandsForReviewBadJSONFallsBack(t *testing.T) {
+	t.Setenv("MDVIEW_COMMANDS", `not json`)
+	if got := commandsForReview(); len(got) != 6 {
+		t.Fatalf("bad JSON should fall back to 6 defaults, got %d", len(got))
+	}
+}
+
+func TestCommandsForReviewMissingFieldFallsBack(t *testing.T) {
+	t.Setenv("MDVIEW_COMMANDS", `[{"id":"","label":"no id","prompt":"p"}]`)
+	if got := commandsForReview(); len(got) != 6 {
+		t.Fatalf("entry with empty id should fall back to defaults, got %d", len(got))
+	}
+}
+
+func TestReviewCommandVerdictRoundTrip(t *testing.T) {
+	state := t.TempDir()
+	t.Setenv("MDVIEW_STATE_DIR", state)
+	bin := buildBin(t)
+
+	md := filepath.Join(t.TempDir(), "doc.md")
+	if err := os.WriteFile(md, []byte("# hi\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	const key = "cmd-itest"
+
+	cmd := exec.Command(bin, md)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Env = append(os.Environ(),
+		"MDVIEW_KEY="+key,
+		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_BROWSER=true",
+		"MDVIEW_NO_CLIENT_SECONDS=30",
+		`MDVIEW_COMMANDS=[{"id":"simplify","label":"Simplify","prompt":"tighten it"}]`,
+	)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	var rec *rendezvous.Record
+	for i := 0; i < 100; i++ {
+		rec, _ = rendezvous.Read(key)
+		if rec != nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if rec == nil {
+		_ = cmd.Process.Kill()
+		t.Fatal("rendezvous file never appeared")
+	}
+
+	url := "http://127.0.0.1:" + strconv.Itoa(rec.Port) + "/verdict"
+	body := `{"verdict":"command","command":"simplify","prompt":"tighten it"}`
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
+	req.Header.Set("Authorization", "Bearer "+rec.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		resp.Body.Close()
+		_ = cmd.Process.Kill()
+		t.Fatalf("POST /verdict returned %d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("process should exit 0 on a command verdict: %v", err)
+	}
+	if !strings.Contains(out.String(), `"verdict":"command"`) ||
+		!strings.Contains(out.String(), `"command":"simplify"`) ||
+		!strings.Contains(out.String(), `"prompt":"tighten it"`) {
+		t.Fatalf("MDVIEW_VERDICT missing command/prompt: %q", out.String())
 	}
 }

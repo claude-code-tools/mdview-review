@@ -88,7 +88,7 @@ func main() {
 	// Default: review mode — render with the dock, serve, block until the user decides.
 	token := newToken()
 	nonce := newToken()
-	page, err := render.Page(src, token, render.BuiltinCommands())
+	page, err := render.Page(src, token, commandsForReview())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: render: %v\n", err)
 		os.Exit(1)
@@ -164,6 +164,28 @@ func envInt(name string) int {
 		}
 	}
 	return 0
+}
+
+// commandsForReview resolves the command-button set for review mode: MDVIEW_COMMANDS (a JSON
+// array of render.Command) replaces the built-in defaults; an empty array disables the strip;
+// unset, invalid JSON, or any entry missing a non-empty id/label falls back to the defaults.
+func commandsForReview() []render.Command {
+	s := os.Getenv("MDVIEW_COMMANDS")
+	if s == "" {
+		return render.BuiltinCommands()
+	}
+	var cmds []render.Command
+	if err := json.Unmarshal([]byte(s), &cmds); err != nil {
+		fmt.Fprintf(os.Stderr, "mdview: ignoring invalid MDVIEW_COMMANDS (%v); using defaults\n", err)
+		return render.BuiltinCommands()
+	}
+	for _, c := range cmds {
+		if strings.TrimSpace(c.ID) == "" || strings.TrimSpace(c.Label) == "" {
+			fmt.Fprintln(os.Stderr, "mdview: ignoring MDVIEW_COMMANDS (entry with empty id/label); using defaults")
+			return render.BuiltinCommands()
+		}
+	}
+	return cmds // may be an empty slice -> no command strip
 }
 
 // stopForKey definitively tears down this agent's preview server (if any) for MDVIEW_KEY.

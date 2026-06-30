@@ -98,10 +98,12 @@ main.go:  commands = parse(MDVIEW_COMMANDS) or BUILTIN_DEFAULTS   ([]  => none)
      command:id, prompt})`. If the list is empty, the strip stays empty and is hidden
      (collapses to zero height — no divider, no gap).
    - **Recommended highlight.** Entries with `recommended:true` get an extra
-     `mv-cmd--recommended` class → a distinct accent style (accent border/ring + a small
-     leading dot), so the agent's suggested follow-up stands out from the rest of the strip.
-     Purely visual; the click payload is identical to any other command. The SKILL instructs
-     agents to mark at most one or two — highlighting everything highlights nothing.
+     `mv-cmd--recommended` class → a "featured" style: a gold **sparkle** mark (a large + small
+     four-point shine, the conventional highlights glyph) plus a violet→indigo gradient border,
+     so the agent's suggested follow-up stands out without reusing the green Approve color
+     (which would read as "already approved"). Purely visual; the click payload is identical to
+     any other command. The SKILL instructs agents to mark at most one or two — highlighting
+     everything highlights nothing.
    - **Scroll fades.** The strip is `overflow-x:auto` with the scrollbar hidden. A scroll +
      resize listener toggles state classes on the strip based on position:
      - not scrolled (`scrollLeft≈0`) and overflowing → right fade only

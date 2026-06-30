@@ -86,6 +86,52 @@ When the command exits, parse the last `MDVIEW_VERDICT` line on stdout:
   changes, and (if useful) re-render the updated doc for another review round.
 - `MDVIEW_VERDICT {"verdict":"dismissed"}` → the user closed the tab or didn't decide; ask how
   they'd like to proceed.
+- `MDVIEW_VERDICT {"verdict":"command","command":"…","prompt":"…"}` → the user clicked a curated
+  command button. **Do what `prompt` says** (it's a complete instruction about this document);
+  branch on `command` only if you want programmatic dispatch. After acting, re-render the
+  updated doc for another review round when appropriate.
+
+## Curated command buttons (suggesting good follow-ups)
+
+The review page shows a row of **command buttons** beneath Approve / Request-changes. Their one
+purpose: **strengthen the document before the user commits to it.** Every button you offer must
+be a follow-up that makes the plan/doc better, safer, or more complete.
+
+**Choose dynamically, from the document and the workload.** There is no fixed use-case→button
+mapping — reason about what would most strengthen *this* doc. With `MDVIEW_COMMANDS` unset the
+user gets a generic built-in set; supply your own whenever you can do better. Set it to a JSON
+array of `{ "id", "label", "prompt", "recommended"? }` — this **replaces** the defaults (`[]`
+disables the strip entirely):
+
+    MDVIEW_COMMANDS='[{"id":"...","label":"...","prompt":"...","recommended":true}]' \
+      MDVIEW_KEY="<id>" MDVIEW_OWNER_PID="$PPID" \
+      $HOME/.cache/mdview-review/v0.1.2/mdview <file.md>
+
+**A catalog to draw from** (a starter set, not a closed list — adapt prompts to the doc, and
+invent doc-specific buttons freely):
+
+| label | id | reach for it when… |
+|---|---|---|
+| Review with subagent | `review-with-subagent` | almost any substantive plan/spec — independent eyes |
+| Stress-test | `devils-advocate` | risky assumptions, complex logic, high-stakes/irreversible changes |
+| Verify vs codebase | `verify-against-codebase` | the doc makes concrete claims about files/APIs/types/schema |
+| Security review | `security-review` | auth, payments, infra/proxy, secrets/PII, untrusted input |
+| Failure gaps | `silent-failure-review` | async/optimistic flows, network/IO, retries, partial-failure paths |
+| Research patterns | `research-patterns` | widely-solved problems (chat, auth, pagination, public APIs) |
+| Explore alternatives | `explore-alternatives` | a design committing to one approach without weighing others |
+| User friction | `user-friction-review` | multi-step / interaction-heavy flows, onboarding, forms |
+| Performance | `performance-review` | hot paths, fan-out, large-N data, real-time/high-concurrency |
+| Footguns / DRY | `code-quality-review` | code-change plans where maintainability/duplication matter |
+| Test coverage | `test-coverage` | a plan that doesn't specify how it'll be tested |
+| Simplify | `simplify` | over-large or over-engineered plans |
+| Add detail | `add-detail` | thin or vague sections |
+| Decompose | `decompose` | a large multi-part plan better built as several |
+
+**Rules of thumb:** `label` ≤ ~3 words; `prompt` a complete imperative instruction you can
+execute verbatim (usually ending "before I proceed" or "then re-render for review"); keep the
+set small (≤ ~6) so it stays curated; mark **at most one or two** `recommended: true` (the
+follow-up you'd most advise — highlighting everything highlights nothing). The buttons are
+suggestions, never auto-actions: nothing runs until the user clicks.
 
 ## Overview mode — when no decision is needed
 

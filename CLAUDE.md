@@ -78,6 +78,16 @@ Verdicts are exactly `approve` | `changes` (requires a non-empty comment) | `dis
 Timeouts are injectable via `Options` (used by tests for fast lifecycle assertions) and
 overridable at runtime via `MDVIEW_NO_CLIENT_SECONDS` / `MDVIEW_MAX_LIFETIME_SECONDS`.
 
+**Curated command buttons.** Beneath Approve / Request-changes, the review page shows a
+horizontally-scrollable strip of one-click "command" buttons that return a new
+`verdict:"command"` outcome (`{command, prompt}`) — the agent executes the returned `prompt`.
+The set is the built-in `render.BuiltinCommands()` by default, or a caller-supplied
+`MDVIEW_COMMANDS` JSON array (`{id,label,prompt,recommended?}`) that replaces it (`[]` disables).
+`Command` lives in `internal/render`; `render.Page` injects the set as JSON into `review.js`,
+which builds the pills and POSTs the command verdict through the unchanged `/verdict` path.
+`--view` mode has no strip. The SKILL carries a catalog + guidance so agents tailor the set per
+document.
+
 ## Testing notes
 
 `internal/server` tests start a real server (`Start`) and drive it with a normal `http.Client`

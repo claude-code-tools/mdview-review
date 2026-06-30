@@ -79,6 +79,11 @@ integrations: `MDVIEW_KEY` enables a persistent per-key browser tab across revie
 `MDVIEW_KEY`) definitively tears the server down. `MDVIEW_STATE_DIR` overrides where the
 per-key rendezvous files live.
 
+`MDVIEW_COMMANDS` (review mode) sets the curated command buttons shown beneath Approve /
+Request-changes — a JSON array of `{id,label,prompt,recommended?}` that replaces the built-in
+set (`[]` disables the strip). Clicking one returns `MDVIEW_VERDICT {"verdict":"command",...}`
+to the caller; the agent acts on the button's `prompt`.
+
 ## Security
 
 - Binds `127.0.0.1` only — never reachable off your machine.

@@ -1,5 +1,6 @@
 (function () {
   var TOKEN = "__MDVIEW_TOKEN__";
+  var COMMANDS = __MDVIEW_COMMANDS__;
   var bar = document.getElementById("mdview-bar");
   var approve = document.getElementById("mdview-approve");
   var changes = document.getElementById("mdview-changes");
@@ -49,6 +50,25 @@
       finish("Review session ended.", false);
     });
   }
+
+  var cmdStrip = document.getElementById("mdview-commands");
+  (function buildCommands() {
+    if (!cmdStrip || !Array.isArray(COMMANDS) || COMMANDS.length === 0) {
+      if (cmdStrip) cmdStrip.style.display = "none";
+      return;
+    }
+    COMMANDS.forEach(function (cmd) {
+      if (!cmd || !cmd.id || !cmd.label) return;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "mv-cmd" + (cmd.recommended ? " mv-cmd--recommended" : "");
+      b.textContent = cmd.label;
+      b.addEventListener("click", function () {
+        send({ verdict: "command", command: cmd.id, prompt: cmd.prompt || "" });
+      });
+      cmdStrip.appendChild(b);
+    });
+  })();
 
   approve.addEventListener("click", function () { send({ verdict: "approve" }); });
   changes.addEventListener("click", function () {

@@ -90,3 +90,17 @@
   #mdview-label{display:none}
   #mdview-buttons{flex:1;justify-content:flex-end}
 }
+
+#mdview-commands{display:flex;align-items:center;gap:8px;overflow-x:auto;
+  padding:2px 6px 8px;margin-bottom:6px;border-bottom:1px solid var(--mv-border);
+  scrollbar-width:none}
+#mdview-commands::-webkit-scrollbar{display:none}
+#mdview-bar.panel-open #mdview-commands,#mdview-bar.mv-done #mdview-commands{display:none}
+.mv-cmd{flex:none;cursor:pointer;white-space:nowrap;
+  font-family:inherit;font-size:12.5px;font-weight:600;line-height:1;
+  padding:7px 11px;border-radius:999px;border:1px solid var(--mv-border);
+  background:var(--mv-ghost-hover);color:var(--mv-fg);
+  transition:background .12s ease,border-color .12s ease,transform .12s ease}
+.mv-cmd:hover{background:transparent;border-color:var(--mv-muted);transform:translateY(-1px)}
+.mv-cmd:active{transform:translateY(0)}
+.mv-cmd:focus-visible{outline:none;box-shadow:0 0 0 3px var(--mv-ring)}

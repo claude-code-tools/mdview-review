@@ -3,6 +3,7 @@ package render
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -26,19 +27,19 @@ var reviewJS string
 
 var md = goldmark.New(goldmark.WithExtensions(extension.GFM))
 
-// Page renders markdown to a full self-contained HTML page WITH the review dock
-// (Approve / Request-changes), with the token substituted into the client script.
-func Page(src []byte, token string) (string, error) {
-	return build(src, true, token)
+// Page renders markdown to a full self-contained HTML page WITH the review dock and the
+// curated command strip, with the token + commands substituted into the client script.
+func Page(src []byte, token string, commands []Command) (string, error) {
+	return build(src, true, token, commands)
 }
 
 // View renders markdown to a full self-contained HTML page WITHOUT the review dock —
 // for showing the user an overview / FYI that needs no decision.
 func View(src []byte) (string, error) {
-	return build(src, false, "")
+	return build(src, false, "", nil)
 }
 
-func build(src []byte, withReview bool, token string) (string, error) {
+func build(src []byte, withReview bool, token string, commands []Command) (string, error) {
 	var bodyBuf bytes.Buffer
 	if err := md.Convert(src, &bodyBuf); err != nil {
 		return "", err
@@ -74,8 +75,17 @@ func build(src []byte, withReview bool, token string) (string, error) {
 		b.WriteString("</script>")
 	}
 	if withReview {
+		cj, err := json.Marshal(commands)
+		if err != nil {
+			return "", err
+		}
+		if len(commands) == 0 {
+			cj = []byte("[]") // json.Marshal(nil) is "null"; the client expects an array
+		}
+		js := strings.ReplaceAll(reviewJS, "__MDVIEW_TOKEN__", token)
+		js = strings.ReplaceAll(js, "__MDVIEW_COMMANDS__", string(cj))
 		b.WriteString("<script>")
-		b.WriteString(strings.ReplaceAll(reviewJS, "__MDVIEW_TOKEN__", token))
+		b.WriteString(js)
 		b.WriteString("</script>")
 	}
 	b.WriteString("</body></html>")

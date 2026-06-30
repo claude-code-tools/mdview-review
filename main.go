@@ -76,7 +76,7 @@ func main() {
 		return
 
 	case "print":
-		page, err := render.Page(src, newToken())
+		page, err := render.Page(src, newToken(), render.BuiltinCommands())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "mdview: render: %v\n", err)
 			os.Exit(1)
@@ -88,7 +88,7 @@ func main() {
 	// Default: review mode — render with the dock, serve, block until the user decides.
 	token := newToken()
 	nonce := newToken()
-	page, err := render.Page(src, token)
+	page, err := render.Page(src, token, render.BuiltinCommands())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mdview: render: %v\n", err)
 		os.Exit(1)

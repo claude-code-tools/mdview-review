@@ -52,8 +52,9 @@ type Handle struct {
 	everConnected bool
 	tabTimer      *time.Timer
 
-	result chan Verdict
-	stop   chan struct{}
+	result      chan Verdict
+	stop        chan struct{}
+	firstClient chan struct{} // closed when the first SSE client connects
 }
 
 // Start binds a random localhost port and begins serving the review page.
@@ -84,8 +85,9 @@ func Start(o Options) (*Handle, error) {
 		page:   o.Page,
 		nonce:  o.Nonce,
 		grace:  o.TabCloseGrace,
-		result: make(chan Verdict, 1),
-		stop:   make(chan struct{}),
+		result:      make(chan Verdict, 1),
+		stop:        make(chan struct{}),
+		firstClient: make(chan struct{}),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", h.handleRoot)
@@ -99,6 +101,10 @@ func Start(o Options) (*Handle, error) {
 
 // Wait blocks until the review is decided and returns the verdict.
 func (h *Handle) Wait() Verdict { return <-h.result }
+
+// FirstClient is closed once the first SSE client connects. The launcher uses it to avoid
+// opening a duplicate browser tab when an existing tab has reconnected after a sticky-port reuse.
+func (h *Handle) FirstClient() <-chan struct{} { return h.firstClient }
 
 // Close shuts the server down. Safe to call after a decision.
 func (h *Handle) Close() error {
@@ -194,12 +200,17 @@ func (h *Handle) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	io.WriteString(w, ": connected\n\n")
+	// Reconnect fast (default EventSource retry is ~3s): after a sticky-port reuse the previous
+	// round's tab must reconnect quickly so it reloads and so the launcher can detect it and
+	// skip opening a duplicate tab.
+	io.WriteString(w, "retry: 400\n\n")
 	if h.nonce != "" {
 		io.WriteString(w, "event: hello\ndata: "+h.nonce+"\n\n")
 	}
 	fl.Flush()
 
 	h.mu.Lock()
+	first := !h.everConnected
 	h.everConnected = true
 	h.clients++
 	if h.tabTimer != nil {
@@ -207,6 +218,9 @@ func (h *Handle) handleEvents(w http.ResponseWriter, r *http.Request) {
 		h.tabTimer = nil
 	}
 	h.mu.Unlock()
+	if first {
+		close(h.firstClient) // everConnected only ever goes false->true, so this closes once
+	}
 
 	<-r.Context().Done() // client disconnected
 

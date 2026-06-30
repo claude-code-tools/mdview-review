@@ -50,6 +50,7 @@ func TestReviewKeyLifecycle(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"MDVIEW_KEY="+key,
 		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_OPEN_GRACE_SECONDS=0", // skip the tab-reuse open grace in tests
 		"MDVIEW_BROWSER=true", // no real browser
 		"MDVIEW_NO_CLIENT_SECONDS=30",
 	)
@@ -118,6 +119,7 @@ func TestReplaceOnReuseReclaimesStickyPort(t *testing.T) {
 	cmd1.Env = append(os.Environ(),
 		"MDVIEW_KEY="+key,
 		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_OPEN_GRACE_SECONDS=0", // skip the tab-reuse open grace in tests
 		"MDVIEW_BROWSER=true",      // no real browser
 		"MDVIEW_NO_CLIENT_SECONDS=60", // stay alive — we don't post a verdict
 	)
@@ -149,6 +151,7 @@ func TestReplaceOnReuseReclaimesStickyPort(t *testing.T) {
 	cmd2.Env = append(os.Environ(),
 		"MDVIEW_KEY="+key,
 		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_OPEN_GRACE_SECONDS=0", // skip the tab-reuse open grace in tests
 		"MDVIEW_BROWSER=true",
 		"MDVIEW_NO_CLIENT_SECONDS=60",
 	)
@@ -272,6 +275,7 @@ func TestReviewCommandVerdictRoundTrip(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"MDVIEW_KEY="+key,
 		"MDVIEW_STATE_DIR="+state,
+		"MDVIEW_OPEN_GRACE_SECONDS=0", // skip the tab-reuse open grace in tests
 		"MDVIEW_BROWSER=true",
 		"MDVIEW_NO_CLIENT_SECONDS=30",
 		`MDVIEW_COMMANDS=[{"id":"simplify","label":"Simplify","prompt":"tighten it"}]`,

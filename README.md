@@ -77,7 +77,9 @@ browser, e.g. `MDVIEW_BROWSER="open -a Safari"`; `MDVIEW_NO_CLIENT_SECONDS` (def
 integrations: `MDVIEW_KEY` enables a persistent per-key browser tab across review rounds;
 `MDVIEW_OWNER_PID` makes the server exit when that pid dies; `mdview --stop` (with the same
 `MDVIEW_KEY`) definitively tears the server down. `MDVIEW_STATE_DIR` overrides where the
-per-key rendezvous files live.
+per-key rendezvous files live. On a keyed re-run, mdview reuses the already-open tab (it
+reloads itself) instead of opening a new one; `MDVIEW_OPEN_GRACE_SECONDS` (default 1) is how
+long it waits for that tab to reconnect before opening a fresh one.
 
 `MDVIEW_COMMANDS` (review mode) sets the curated command buttons shown beneath Approve /
 Request-changes — a JSON array of `{id,label,prompt,recommended?}` that replaces the built-in

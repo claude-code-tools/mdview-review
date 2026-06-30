@@ -270,3 +270,35 @@ func TestCommandRequiresNonEmptyCommand(t *testing.T) {
 		t.Fatalf("empty command = %d, want 400", got)
 	}
 }
+
+func TestFirstClientSignalsAndRetryHint(t *testing.T) {
+	h := startTest(t)
+
+	// Open before any client connected.
+	select {
+	case <-h.FirstClient():
+		t.Fatal("FirstClient closed before any client connected")
+	default:
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", h.URL+"events", nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	buf := make([]byte, 256)
+	n, _ := resp.Body.Read(buf)
+	if !strings.Contains(string(buf[:n]), "retry:") {
+		t.Fatalf("events stream missing reconnect retry hint: %q", string(buf[:n]))
+	}
+
+	select {
+	case <-h.FirstClient():
+	case <-time.After(2 * time.Second):
+		t.Fatal("FirstClient not closed after a client connected")
+	}
+}

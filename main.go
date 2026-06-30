@@ -127,7 +127,18 @@ func main() {
 	}
 
 	fmt.Fprintf(os.Stderr, "mdview: review server at %s\n", h.URL)
-	openBrowser(h.URL)
+	if key != "" {
+		// Per-agent sticky tab: a previous round's tab (if still open) reconnects to this port
+		// and reloads itself. Only open a fresh tab if no existing client shows up within the
+		// grace window (first run for this key, or the tab was closed).
+		select {
+		case <-h.FirstClient():
+		case <-time.After(envDur("MDVIEW_OPEN_GRACE_SECONDS", 1)):
+			openBrowser(h.URL)
+		}
+	} else {
+		openBrowser(h.URL)
+	}
 
 	v := h.Wait()
 	if key != "" {
